@@ -18,8 +18,7 @@ def log_disruption(log_file, start_time=None, end_time=None):
             f.write(f"Disconnected at {start_time.strftime('%Y-%m-%d %H:%M:%S')}, "
                     f"Reconnected at {end_time.strftime('%Y-%m-%d %H:%M:%S')}, "
                     f"Downtime: {downtime}\n")
-        else:
-            f.write(f"Internet dropped at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+
 
 def get_stats():
     """Calculates and returns the current statistics."""

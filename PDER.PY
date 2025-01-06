@@ -6,7 +6,7 @@ import curses
 import argparse  # Add argparse for command-line arguments
 
 class InternetMonitor:
-    def __init__(self, failure_threshold=3, min_downtime=timedelta(seconds=3), check_connectivity_timeout=1, log_update_interval=60):
+    def __init__(self, failure_threshold=3, min_downtime=timedelta(seconds=3), check_connectivity_timeout=1, log_update_interval=30):
         # Initialize monitoring parameters
         self.start_time = datetime.now()  # Start time of the monitoring session
         self.total_drops = 0  # Total number of connectivity drops
@@ -87,10 +87,10 @@ class InternetMonitor:
 
     def check_connectivity(self):
         # Check internet connectivity by pinging multiple URLs
-        test_urls = ["https://www.google.com", "https://www.cloudflare.com", "https://www.bing.com"]
+        test_urls = ["https://www.google.com", "https://www.cloudflare.com"]
         for url in test_urls:
             try:
-                response = requests.head(url, timeout=5)  # Use HEAD request for faster response
+                response = requests.head(url, timeout=1)  # Use HEAD request for faster response
                 if response.status_code == 200:
                     return True
             except requests.RequestException:
@@ -129,10 +129,22 @@ class InternetMonitor:
                     self.is_down = False
                     self.failure_count = 0
             else:
-                self.failure_count += 1
-                if self.failure_count >= self.failure_threshold and not self.is_down:
+                if not self.is_down:
                     self.last_down_time = datetime.now()
-                    self.is_down = True
+                    self.is_down = True  # Mark as down immediately
+                self.failure_count += 1
+
+                # Check if the downtime has exceeded the minimum downtime
+                if self.is_down and (datetime.now() - self.last_down_time) >= self.min_downtime:
+                    downtime = datetime.now() - self.last_down_time
+                    self.total_downtime += downtime
+                    self.log_disruption(start_time=self.last_down_time, end_time=datetime.now())
+                    self.total_drops += 1
+                    current_hour = datetime.now().hour
+                    self.hourly_drops[current_hour] = self.hourly_drops.get(current_hour, 0) + 1
+                    self.is_down = False  # Reset the down flag to avoid duplicate logs
+                    self.failure_count = 0
+
 
             if self.should_update_log():
                 self.write_log_buffer()
